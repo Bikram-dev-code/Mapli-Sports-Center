@@ -107,7 +107,7 @@ export function RegisterTeamDialog({
               <Label htmlFor="team_name">Team Name *</Label>
               <Input
                 id="team_name"
-                placeholder="e.g., Thunder Hawks"
+                placeholder="e.g., Rajesh Dai Ko Team"
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
                 className="h-11"
@@ -120,7 +120,7 @@ export function RegisterTeamDialog({
                 <Label htmlFor="captain_faculty">Captain's Faculty *</Label>
                 <Input
                   id="captain_faculty"
-                  placeholder="e.g., Engineering"
+                  placeholder="e.g., BCSIT"
                   value={captainFaculty}
                   onChange={(e) => setCaptainFaculty(e.target.value)}
                   className="h-11"

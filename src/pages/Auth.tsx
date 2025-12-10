@@ -80,7 +80,7 @@ export default function Auth() {
       <Card className="w-full max-w-md shadow-2xl border-primary/10">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-            <Trophy className="h-8 w-8 text-primary-foreground" />
+            <img src="malp.png" alt="logo" className="rounded" />
           </div>
           <div>
             <CardTitle className="font-display text-2xl">Sports Week Dashboard</CardTitle>

@@ -11,7 +11,13 @@ import { toast } from "sonner";
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
-  const { games, loading: gamesLoading, addGame } = useGames();
+  const {
+    games,
+    loading: gamesLoading,
+    addGame,
+    updateGame,
+    deleteGame,
+  } = useGames();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -22,11 +28,9 @@ const Index = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    // Auto-select first game if none selected
     if (games.length > 0 && !selectedGame) {
       setSelectedGame(games[0]);
     }
-    // Update selected game if it was modified
     if (selectedGame) {
       const updated = games.find((g) => g.id === selectedGame.id);
       if (updated) {
@@ -35,15 +39,27 @@ const Index = () => {
     }
   }, [games, selectedGame]);
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error("Failed to sign out");
-    } else {
+
+const handleSignOut = async () => {
+  const { error } = await signOut();
+
+  if (error) {
+    if (error.status === 403 || error.message.includes('session_not_found')) {
+      console.warn("User attempted sign-out with an expired session. Treating as success.");
       toast.success("Signed out successfully");
       navigate("/auth");
+      return;
     }
-  };
+
+    toast.error(`Failed to sign out: ${error.message}`);
+    console.error("Genuine Sign Out Failure:", error); 
+    
+  } else {
+    toast.success("Signed out successfully");
+    navigate("/auth");
+  }
+};
+
 
   if (authLoading || gamesLoading) {
     return (
@@ -67,6 +83,8 @@ const Index = () => {
         selectedGameId={selectedGame?.id ?? null}
         onSelectGame={setSelectedGame}
         onAddGame={addGame}
+        onUpdateGame={updateGame}
+        onDeleteGame={deleteGame}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSignOut={handleSignOut}

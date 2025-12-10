@@ -95,7 +95,7 @@ export function RegisterIndividualDialog({
               <Label htmlFor="phone">Phone Number *</Label>
               <Input
                 id="phone"
-                placeholder="e.g., +1234567890"
+                placeholder="e.g.,987654321"
                 value={formData.phone}
                 onChange={handleChange("phone")}
                 className="h-11"
@@ -106,7 +106,7 @@ export function RegisterIndividualDialog({
                 <Label htmlFor="faculty">Faculty *</Label>
                 <Input
                   id="faculty"
-                  placeholder="e.g., Engineering"
+                  placeholder="e.g., BCSIT"
                   value={formData.faculty}
                   onChange={handleChange("faculty")}
                   className="h-11"

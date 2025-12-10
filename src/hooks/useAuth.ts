@@ -47,10 +47,11 @@ export function useAuth() {
     return { error };
   };
 
-  const signOut = async () => {
+const signOut = async () => {
+    await supabase.auth.refreshSession(); 
     const { error } = await supabase.auth.signOut();
     return { error };
-  };
+};
 
   return {
     user,

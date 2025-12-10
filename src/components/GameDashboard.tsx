@@ -1,23 +1,45 @@
-import { Game } from "@/types/database";
-import { useParticipants } from "@/hooks/useParticipants";
+import { useState } from "react";
+import { Game, IndividualParticipant, Team, NewTeam } from "@/types/database";
+import { useParticipants } from "@/hooks/useParticipants"; // Assuming this is the correct hook path
 import { ParticipantsTable } from "./ParticipantsTable";
 import { RegisterIndividualDialog } from "./RegisterIndividualDialog";
 import { RegisterTeamDialog } from "./RegisterTeamDialog";
+import { EditIndividualDialog } from "./EditIndividualDialog";
+import { EditTeamDialog } from "./EditTeamDialog";             
 import { exportIndividualsToExcel, exportTeamsToExcel } from "@/lib/exportToExcel";
 import { Button } from "@/components/ui/button";
-import { Download, Trophy, Users, User } from "lucide-react";
+import { Download, Trophy, Users, User, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+// Define the shape of the update functions we expect from useParticipants
+interface ParticipantUpdatePayload {
+  id: number;
+  updatedData: any; // Could be IndividualParticipant or Team structure
+}
 
 interface GameDashboardProps {
   game: Game | null;
 }
 
 export function GameDashboard({ game }: GameDashboardProps) {
-  const { individuals, teams, loading, adding, addIndividual, addTeam } = useParticipants(
-    game?.id ?? null,
-    game?.is_group_game ?? false
-  );
+  // State for managing the edit modals
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [recordToEdit, setRecordToEdit] = useState<IndividualParticipant | Team | null>(null);
+  const { 
+    individuals, 
+    teams, 
+    loading, 
+    adding, 
+    addIndividual, 
+    addTeam,
+    deleteIndividual,   
+    deleteTeam,
+    updateIndividual,  
+    updateTeam,         
+  } = useParticipants(game?.id ?? null, game?.is_group_game ?? false);
+  // --------------------------------
 
+  // --- UI RENDER HANDLERS (Same as before) ---
   if (!game) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/20">
@@ -45,10 +67,45 @@ export function GameDashboard({ game }: GameDashboardProps) {
   const count = game.is_group_game ? teams.length : individuals.length;
   const label = game.is_group_game ? "Teams" : "Participants";
 
+  // --- CRUD ACTION HANDLERS ---
+
+  const handleEditClick = (record: IndividualParticipant | Team) => {
+    setRecordToEdit(record);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (id: number) => {
+    if (confirm(`Are you sure you want to delete this ${game.is_group_game ? 'team' : 'participant'}?`)) {
+      if (game.is_group_game) {
+        deleteTeam(id);
+      } else {
+        deleteIndividual(id);
+      }
+    }
+  };
+
+  const handleUpdateSubmit = (updatedData: any) => {
+    if (!recordToEdit) return;
+
+    const payload: ParticipantUpdatePayload = { 
+        id: recordToEdit.id, 
+        updatedData 
+    };
+
+    if (game.is_group_game) {
+      updateTeam(payload);
+    } else {
+      updateIndividual(payload);
+    }
+    
+    setIsEditModalOpen(false);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background">
       {/* Header */}
       <header className="px-8 py-6 border-b bg-card">
+        {/* ... (Header content remains the same) ... */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
@@ -71,6 +128,7 @@ export function GameDashboard({ game }: GameDashboardProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Registration Dialogs */}
             {game.is_group_game ? (
               <RegisterTeamDialog
                 gameId={game.id}
@@ -86,6 +144,7 @@ export function GameDashboard({ game }: GameDashboardProps) {
                 isLoading={adding}
               />
             )}
+            {/* Export Button */}
             <Button
               variant="outline"
               className="gap-2"
@@ -101,13 +160,40 @@ export function GameDashboard({ game }: GameDashboardProps) {
 
       {/* Table */}
       <main className="flex-1 overflow-auto p-8">
-        <ParticipantsTable
-          individuals={individuals}
-          teams={teams}
-          isGroupGame={game.is_group_game}
-          loading={loading}
-        />
+        {loading ? (
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+        ) : (
+            <ParticipantsTable
+              individuals={individuals}
+              teams={teams}
+              isGroupGame={game.is_group_game}
+              loading={loading}
+              
+              // --- PASS HANDLERS TO THE TABLE COMPONENT ---
+              onEdit={handleEditClick}      // Passes function to open the modal
+              onDelete={handleDeleteClick}  // Passes function to handle deletion
+            />
+        )}
       </main>
+
+      {/* --- CONDITIONAL EDIT MODALS --- */}
+      {isEditModalOpen && recordToEdit && (
+        game.is_group_game ? (
+          <EditTeamDialog
+            team={recordToEdit as Team}
+            onClose={() => setIsEditModalOpen(false)}
+            onSubmit={handleUpdateSubmit}
+          />
+        ) : (
+          <EditIndividualDialog
+            participant={recordToEdit as IndividualParticipant}
+            onClose={() => setIsEditModalOpen(false)}
+            onSubmit={handleUpdateSubmit}
+          />
+        )
+      )}
     </div>
   );
 }
