@@ -11,22 +11,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Users, User } from "lucide-react";
+import { NewGame } from "@/types/database";
 
 interface AddGameDialogProps {
-  onAddGame: (name: string) => void;
-  isLoading: boolean;
+  onAddGame: (game: NewGame) => void;
 }
 
-export function AddGameDialog({ onAddGame, isLoading }: AddGameDialogProps) {
+export function AddGameDialog({ onAddGame }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
-  const [gameName, setGameName] = useState("");
+  const [name, setName] = useState("");
+  const [isGroupGame, setIsGroupGame] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (gameName.trim()) {
-      onAddGame(gameName.trim());
-      setGameName("");
+    if (name.trim()) {
+      onAddGame({ name: name.trim(), is_group_game: isGroupGame });
+      setName("");
+      setIsGroupGame(false);
       setOpen(false);
     }
   };
@@ -34,7 +37,7 @@ export function AddGameDialog({ onAddGame, isLoading }: AddGameDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="sports" size="sm" className="w-full">
+        <Button variant="sports" className="w-full gap-2 justify-start">
           <Plus className="h-4 w-4" />
           Add New Game
         </Button>
@@ -44,19 +47,41 @@ export function AddGameDialog({ onAddGame, isLoading }: AddGameDialogProps) {
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Add New Game</DialogTitle>
             <DialogDescription>
-              Enter the name of the sport or game you want to add to Sports Week.
+              Create a new game for Sports Week. Choose whether it's an individual or team game.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-6">
+          <div className="grid gap-6 py-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Game Name</Label>
+              <Label htmlFor="game-name">Game Name</Label>
               <Input
-                id="name"
-                placeholder="e.g., Chess, Football, Badminton..."
-                value={gameName}
-                onChange={(e) => setGameName(e.target.value)}
+                id="game-name"
+                placeholder="e.g., Chess, Football, Badminton"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="h-11"
                 autoFocus
+              />
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-3">
+                {isGroupGame ? (
+                  <Users className="h-5 w-5 text-primary" />
+                ) : (
+                  <User className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div>
+                  <Label htmlFor="game-type" className="text-base cursor-pointer">
+                    Team/Group Game
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {isGroupGame ? "Teams with multiple members" : "Individual participants only"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="game-type"
+                checked={isGroupGame}
+                onCheckedChange={setIsGroupGame}
               />
             </div>
           </div>
@@ -64,8 +89,8 @@ export function AddGameDialog({ onAddGame, isLoading }: AddGameDialogProps) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="sports" disabled={!gameName.trim() || isLoading}>
-              {isLoading ? "Adding..." : "Add Game"}
+            <Button type="submit" variant="sports" disabled={!name.trim()}>
+              Add Game
             </Button>
           </DialogFooter>
         </form>

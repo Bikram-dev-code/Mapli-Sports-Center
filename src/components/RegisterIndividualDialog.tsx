@@ -11,41 +11,48 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UserPlus } from "lucide-react";
-import { NewParticipant } from "@/types/database";
+import { NewIndividualParticipant } from "@/types/database";
 
-interface RegisterParticipantDialogProps {
+interface RegisterIndividualDialogProps {
   gameId: number;
   gameName: string;
-  onRegister: (participant: NewParticipant) => void;
+  onRegister: (participant: NewIndividualParticipant) => void;
   isLoading: boolean;
 }
 
-export function RegisterParticipantDialog({
+export function RegisterIndividualDialog({
   gameId,
   gameName,
   onRegister,
   isLoading,
-}: RegisterParticipantDialogProps) {
+}: RegisterIndividualDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
-    student_id: "",
     phone: "",
-    team_name: "",
+    faculty: "",
+    semester: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.full_name && formData.student_id && formData.phone) {
+    if (formData.full_name && formData.phone && formData.faculty && formData.semester) {
       onRegister({
         game_id: gameId,
         full_name: formData.full_name.trim(),
-        student_id: formData.student_id.trim(),
         phone: formData.phone.trim(),
-        team_name: formData.team_name.trim() || undefined,
+        faculty: formData.faculty.trim(),
+        semester: parseInt(formData.semester),
       });
-      setFormData({ full_name: "", student_id: "", phone: "", team_name: "" });
+      setFormData({ full_name: "", phone: "", faculty: "", semester: "" });
       setOpen(false);
     }
   };
@@ -54,7 +61,7 @@ export function RegisterParticipantDialog({
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const isValid = formData.full_name && formData.student_id && formData.phone;
+  const isValid = formData.full_name && formData.phone && formData.faculty && formData.semester;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,52 +76,60 @@ export function RegisterParticipantDialog({
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Register for {gameName}</DialogTitle>
             <DialogDescription>
-              Fill in the participant details to register for this game.
+              Fill in the participant details for this individual game.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-6">
             <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name *</Label>
+              <Label htmlFor="full_name">Participant Name *</Label>
               <Input
                 id="full_name"
-                placeholder="Enter participant's full name"
+                placeholder="Enter full name"
                 value={formData.full_name}
                 onChange={handleChange("full_name")}
                 className="h-11"
                 autoFocus
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="student_id">Student ID *</Label>
-                <Input
-                  id="student_id"
-                  placeholder="e.g., STU2024001"
-                  value={formData.student_id}
-                  onChange={handleChange("student_id")}
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  placeholder="e.g., +1234567890"
-                  value={formData.phone}
-                  onChange={handleChange("phone")}
-                  className="h-11"
-                />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="team_name">Team Name (Optional)</Label>
+              <Label htmlFor="phone">Phone Number *</Label>
               <Input
-                id="team_name"
-                placeholder="Enter team name if applicable"
-                value={formData.team_name}
-                onChange={handleChange("team_name")}
+                id="phone"
+                placeholder="e.g., +1234567890"
+                value={formData.phone}
+                onChange={handleChange("phone")}
                 className="h-11"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="faculty">Faculty *</Label>
+                <Input
+                  id="faculty"
+                  placeholder="e.g., Engineering"
+                  value={formData.faculty}
+                  onChange={handleChange("faculty")}
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="semester">Semester *</Label>
+                <Select
+                  value={formData.semester}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, semester: value }))}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                      <SelectItem key={sem} value={sem.toString()}>
+                        Semester {sem}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>

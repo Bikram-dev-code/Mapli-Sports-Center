@@ -1,45 +1,119 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Participant, NewParticipant } from "@/types/database";
-import { useEffect } from "react";
+import { IndividualParticipant, Team, NewIndividualParticipant, NewTeam, TeamMember } from "@/types/database";
 import { toast } from "sonner";
 
-export function useParticipants(gameId: number | null) {
-  const queryClient = useQueryClient();
+export function useParticipants(gameId: number | null, isGroupGame: boolean) {
+  const [individuals, setIndividuals] = useState<IndividualParticipant[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
 
-  const { data: participants = [], isLoading, error } = useQuery({
-    queryKey: ["participants", gameId],
-    queryFn: async () => {
-      if (!gameId) return [];
-      
+  const fetchIndividuals = async () => {
+    if (!gameId || isGroupGame) return;
+    
+    try {
+      setLoading(true);
       const { data, error } = await supabase
-        .from("participants")
+        .from("individual_participants")
         .select("*")
         .eq("game_id", gameId)
         .order("created_at", { ascending: true });
-      
+
       if (error) throw error;
-      return data as Participant[];
-    },
-    enabled: !!gameId,
-  });
+      setIndividuals(data || []);
+    } catch (error: any) {
+      toast.error("Failed to fetch participants: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Real-time subscription
+  const fetchTeams = async () => {
+    if (!gameId || !isGroupGame) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("teams")
+        .select("*")
+        .eq("game_id", gameId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      // Parse team_members from JSONB
+      const parsedTeams = (data || []).map(team => ({
+        ...team,
+        team_members: (team.team_members as unknown as TeamMember[]) || []
+      }));
+      setTeams(parsedTeams);
+    } catch (error: any) {
+      toast.error("Failed to fetch teams: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addIndividual = async (participant: NewIndividualParticipant) => {
+    try {
+      setAdding(true);
+      const { error } = await supabase
+        .from("individual_participants")
+        .insert([participant]);
+
+      if (error) throw error;
+      toast.success("Participant registered successfully!");
+    } catch (error: any) {
+      toast.error("Failed to register participant: " + error.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const addTeam = async (team: NewTeam) => {
+    try {
+      setAdding(true);
+      const { error } = await supabase
+        .from("teams")
+        .insert([{
+          ...team,
+          team_members: team.team_members as unknown as any
+        }]);
+
+      if (error) throw error;
+      toast.success("Team registered successfully!");
+    } catch (error: any) {
+      toast.error("Failed to register team: " + error.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId) {
+      setIndividuals([]);
+      setTeams([]);
+      return;
+    }
 
+    if (isGroupGame) {
+      fetchTeams();
+    } else {
+      fetchIndividuals();
+    }
+
+    const tableName = isGroupGame ? "teams" : "individual_participants";
     const channel = supabase
-      .channel(`participants-${gameId}`)
+      .channel(`${tableName}-realtime-${gameId}`)
       .on(
         "postgres_changes",
-        { 
-          event: "*", 
-          schema: "public", 
-          table: "participants",
-          filter: `game_id=eq.${gameId}`
-        },
+        { event: "*", schema: "public", table: tableName, filter: `game_id=eq.${gameId}` },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["participants", gameId] });
+          if (isGroupGame) {
+            fetchTeams();
+          } else {
+            fetchIndividuals();
+          }
         }
       )
       .subscribe();
@@ -47,51 +121,14 @@ export function useParticipants(gameId: number | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameId, queryClient]);
-
-  const addParticipant = useMutation({
-    mutationFn: async (newParticipant: NewParticipant) => {
-      const { data, error } = await supabase
-        .from("participants")
-        .insert([newParticipant])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as Participant;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participants", gameId] });
-      toast.success("Participant registered successfully!");
-    },
-    onError: (error) => {
-      toast.error("Failed to register participant: " + error.message);
-    },
-  });
-
-  const deleteParticipant = useMutation({
-    mutationFn: async (participantId: number) => {
-      const { error } = await supabase
-        .from("participants")
-        .delete()
-        .eq("id", participantId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participants", gameId] });
-      toast.success("Participant removed successfully!");
-    },
-    onError: (error) => {
-      toast.error("Failed to remove participant: " + error.message);
-    },
-  });
+  }, [gameId, isGroupGame]);
 
   return {
-    participants,
-    isLoading,
-    error,
-    addParticipant,
-    deleteParticipant,
+    individuals,
+    teams,
+    loading,
+    adding,
+    addIndividual,
+    addTeam,
   };
 }
