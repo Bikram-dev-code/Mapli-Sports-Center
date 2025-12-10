@@ -1,4 +1,3 @@
-import { Participant } from "@/types/database";
 import {
   Table,
   TableBody,
@@ -7,58 +6,72 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Users } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
+import { IndividualParticipant, Team } from "@/types/database";
+import { User, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ParticipantsTableProps {
-  participants: Participant[];
-  isLoading: boolean;
-  onDeleteParticipant: (id: number) => void;
+  individuals: IndividualParticipant[];
+  teams: Team[];
+  isGroupGame: boolean;
+  loading: boolean;
 }
 
-export function ParticipantsTable({
-  participants,
-  isLoading,
-  onDeleteParticipant,
-}: ParticipantsTableProps) {
-  if (isLoading) {
+export function ParticipantsTable({ individuals, teams, isGroupGame, loading }: ParticipantsTableProps) {
+  if (loading) {
     return (
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGroupGame) {
+    if (teams.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <h3 className="font-display text-lg text-muted-foreground">No Teams Registered</h3>
+          <p className="text-sm text-muted-foreground/70 mt-1">
+            Click "Register Team" to add the first team.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-xl border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">#</TableHead>
-              <TableHead className="font-semibold">Name</TableHead>
-              <TableHead className="font-semibold">Student ID</TableHead>
-              <TableHead className="font-semibold">Phone</TableHead>
-              <TableHead className="font-semibold">Team</TableHead>
-              <TableHead className="font-semibold">Registered</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
+              <TableHead className="font-semibold">Team Name</TableHead>
+              <TableHead className="font-semibold">Members</TableHead>
+              <TableHead className="font-semibold">Captain Faculty</TableHead>
+              <TableHead className="font-semibold">Captain Semester</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+            {teams.map((team, index) => (
+              <TableRow key={team.id} className="hover:bg-muted/30 transition-colors">
+                <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                <TableCell className="font-semibold">{team.team_name}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {team.team_members.map((member, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {member.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>{team.captain_faculty}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">Sem {team.captain_semester}</Badge>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -67,88 +80,40 @@ export function ParticipantsTable({
     );
   }
 
-  if (participants.length === 0) {
+  // Individual participants table
+  if (individuals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-          <Users className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="mb-1 font-display text-lg font-semibold text-foreground">No participants yet</h3>
-        <p className="text-sm text-muted-foreground">
-          Register participants using the button above
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <User className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h3 className="font-display text-lg text-muted-foreground">No Participants Registered</h3>
+        <p className="text-sm text-muted-foreground/70 mt-1">
+          Click "Register Participant" to add the first participant.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+    <div className="rounded-xl border overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="w-[60px] font-semibold">#</TableHead>
+          <TableRow className="bg-muted/50">
+            <TableHead className="font-semibold">#</TableHead>
             <TableHead className="font-semibold">Name</TableHead>
-            <TableHead className="font-semibold">Student ID</TableHead>
             <TableHead className="font-semibold">Phone</TableHead>
-            <TableHead className="font-semibold">Team</TableHead>
-            <TableHead className="font-semibold">Registered</TableHead>
-            <TableHead className="w-[60px]"></TableHead>
+            <TableHead className="font-semibold">Faculty</TableHead>
+            <TableHead className="font-semibold">Semester</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {participants.map((participant, index) => (
-            <TableRow key={participant.id} className="group animate-fade-in">
-              <TableCell className="font-medium text-muted-foreground">
-                {index + 1}
-              </TableCell>
-              <TableCell className="font-medium">{participant.full_name}</TableCell>
+          {individuals.map((participant, index) => (
+            <TableRow key={participant.id} className="hover:bg-muted/30 transition-colors">
+              <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+              <TableCell className="font-semibold">{participant.full_name}</TableCell>
+              <TableCell>{participant.phone}</TableCell>
+              <TableCell>{participant.faculty}</TableCell>
               <TableCell>
-                <span className="rounded-md bg-muted px-2 py-1 text-sm font-mono">
-                  {participant.student_id}
-                </span>
-              </TableCell>
-              <TableCell className="text-muted-foreground">{participant.phone}</TableCell>
-              <TableCell>
-                {participant.team_name ? (
-                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-                    {participant.team_name}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground/50">—</span>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {format(new Date(participant.created_at), "MMM d, yyyy")}
-              </TableCell>
-              <TableCell>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Remove Participant?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to remove {participant.full_name} from this game? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => onDeleteParticipant(participant.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Remove
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Badge variant="outline">Sem {participant.semester}</Badge>
               </TableCell>
             </TableRow>
           ))}

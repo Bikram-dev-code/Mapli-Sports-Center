@@ -1,38 +1,58 @@
 import * as XLSX from "xlsx";
-import { Participant } from "@/types/database";
+import { IndividualParticipant, Team } from "@/types/database";
 
-export function exportToExcel(participants: Participant[], gameName: string) {
-  // Prepare data for export
-  const exportData = participants.map((p, index) => ({
+export function exportIndividualsToExcel(participants: IndividualParticipant[], gameName: string) {
+  const data = participants.map((p, index) => ({
     "#": index + 1,
-    "Full Name": p.full_name,
-    "Student ID": p.student_id,
-    "Phone Number": p.phone,
-    "Team Name": p.team_name || "N/A",
-    "Registration Date": new Date(p.created_at).toLocaleDateString(),
+    "Name": p.full_name,
+    "Phone": p.phone,
+    "Faculty": p.faculty,
+    "Semester": p.semester,
   }));
 
-  // Create workbook and worksheet
+  const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-  // Set column widths
-  worksheet["!cols"] = [
-    { wch: 5 },   // #
-    { wch: 25 },  // Full Name
-    { wch: 15 },  // Student ID
-    { wch: 15 },  // Phone Number
-    { wch: 20 },  // Team Name
-    { wch: 18 },  // Registration Date
-  ];
-
-  // Add worksheet to workbook
   XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
 
-  // Generate filename
-  const sanitizedGameName = gameName.replace(/[^a-zA-Z0-9]/g, "_");
-  const filename = `${sanitizedGameName}_Participants.xlsx`;
+  // Auto-size columns
+  const colWidths = [
+    { wch: 5 },   // #
+    { wch: 25 },  // Name
+    { wch: 15 },  // Phone
+    { wch: 20 },  // Faculty
+    { wch: 10 },  // Semester
+  ];
+  worksheet["!cols"] = colWidths;
 
-  // Trigger download
-  XLSX.writeFile(workbook, filename);
+  const fileName = `${gameName.replace(/\s+/g, "_")}_Participants.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+}
+
+export function exportTeamsToExcel(teams: Team[], gameName: string) {
+  const data = teams.map((team, index) => ({
+    "#": index + 1,
+    "Team Name": team.team_name,
+    "Members": team.team_members.map(m => `${m.name} (${m.phone})`).join("; "),
+    "Member Count": team.team_members.length,
+    "Captain Faculty": team.captain_faculty,
+    "Captain Semester": team.captain_semester,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Teams");
+
+  // Auto-size columns
+  const colWidths = [
+    { wch: 5 },   // #
+    { wch: 20 },  // Team Name
+    { wch: 50 },  // Members
+    { wch: 12 },  // Member Count
+    { wch: 20 },  // Captain Faculty
+    { wch: 15 },  // Captain Semester
+  ];
+  worksheet["!cols"] = colWidths;
+
+  const fileName = `${gameName.replace(/\s+/g, "_")}_Teams.xlsx`;
+  XLSX.writeFile(workbook, fileName);
 }

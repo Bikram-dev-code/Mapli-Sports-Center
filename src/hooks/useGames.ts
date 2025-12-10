@@ -1,34 +1,55 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Game, NewGame } from "@/types/database";
-import { useEffect } from "react";
 import { toast } from "sonner";
 
 export function useGames() {
-  const queryClient = useQueryClient();
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: games = [], isLoading, error } = useQuery({
-    queryKey: ["games"],
-    queryFn: async () => {
+  const fetchGames = async () => {
+    try {
       const { data, error } = await supabase
         .from("games")
         .select("*")
         .order("created_at", { ascending: true });
-      
-      if (error) throw error;
-      return data as Game[];
-    },
-  });
 
-  // Real-time subscription
+      if (error) throw error;
+      setGames(data || []);
+    } catch (error: any) {
+      toast.error("Failed to fetch games: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addGame = async (newGame: NewGame) => {
+    try {
+      const { data, error } = await supabase
+        .from("games")
+        .insert([newGame])
+        .select()
+        .single();
+
+      if (error) throw error;
+      toast.success(`Game "${data.name}" added successfully!`);
+      return data;
+    } catch (error: any) {
+      toast.error("Failed to add game: " + error.message);
+      return null;
+    }
+  };
+
   useEffect(() => {
+    fetchGames();
+
     const channel = supabase
-      .channel("games-changes")
+      .channel("games-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "games" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["games"] });
+          fetchGames();
         }
       )
       .subscribe();
@@ -36,51 +57,7 @@ export function useGames() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, []);
 
-  const addGame = useMutation({
-    mutationFn: async (newGame: NewGame) => {
-      const { data, error } = await supabase
-        .from("games")
-        .insert([newGame])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as Game;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["games"] });
-      toast.success("Game added successfully!");
-    },
-    onError: (error) => {
-      toast.error("Failed to add game: " + error.message);
-    },
-  });
-
-  const deleteGame = useMutation({
-    mutationFn: async (gameId: number) => {
-      const { error } = await supabase
-        .from("games")
-        .delete()
-        .eq("id", gameId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["games"] });
-      toast.success("Game deleted successfully!");
-    },
-    onError: (error) => {
-      toast.error("Failed to delete game: " + error.message);
-    },
-  });
-
-  return {
-    games,
-    isLoading,
-    error,
-    addGame,
-    deleteGame,
-  };
+  return { games, loading, addGame, refetch: fetchGames };
 }

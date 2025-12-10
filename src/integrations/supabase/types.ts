@@ -18,51 +18,92 @@ export type Database = {
         Row: {
           created_at: string
           id: number
+          is_group_game: boolean
           name: string
         }
         Insert: {
           created_at?: string
           id?: number
+          is_group_game?: boolean
           name: string
         }
         Update: {
           created_at?: string
           id?: number
+          is_group_game?: boolean
           name?: string
         }
         Relationships: []
       }
-      participants: {
+      individual_participants: {
         Row: {
           created_at: string
+          faculty: string
           full_name: string
           game_id: number
           id: number
           phone: string
-          student_id: string
-          team_name: string | null
+          semester: number
         }
         Insert: {
           created_at?: string
+          faculty: string
           full_name: string
           game_id: number
           id?: number
           phone: string
-          student_id: string
-          team_name?: string | null
+          semester: number
         }
         Update: {
           created_at?: string
+          faculty?: string
           full_name?: string
           game_id?: number
           id?: number
           phone?: string
-          student_id?: string
-          team_name?: string | null
+          semester?: number
         }
         Relationships: [
           {
-            foreignKeyName: "participants_game_id_fkey"
+            foreignKeyName: "individual_participants_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          captain_faculty: string
+          captain_semester: number
+          created_at: string
+          game_id: number
+          id: number
+          team_members: Json
+          team_name: string
+        }
+        Insert: {
+          captain_faculty: string
+          captain_semester: number
+          created_at?: string
+          game_id: number
+          id?: number
+          team_members?: Json
+          team_name: string
+        }
+        Update: {
+          captain_faculty?: string
+          captain_semester?: number
+          created_at?: string
+          game_id?: number
+          id?: number
+          team_members?: Json
+          team_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
