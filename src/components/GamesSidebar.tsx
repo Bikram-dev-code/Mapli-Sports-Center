@@ -96,7 +96,7 @@ export function GamesSidebar({
     <>
       <aside
         className={cn(
-          "h-screen bg-card border-r flex flex-col transition-all duration-300 ease-in-out z-10",
+          "h-screen bg-card border-r flex flex-col transition-all duration-300 ease-in-out z-10 fixed",
           collapsed ? "w-16" : "w-72"
         )}
       >
