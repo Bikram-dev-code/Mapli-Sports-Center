@@ -89,7 +89,8 @@ const handleSignOut = async () => {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSignOut={handleSignOut}
       />
-      <GameDashboard game={selectedGame} />
+      <GameDashboard game={selectedGame} 
+        collapsed={sidebarCollapsed}/>
     </div>
   );
 };
