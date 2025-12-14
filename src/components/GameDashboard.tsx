@@ -5,8 +5,11 @@ import { ParticipantsTable } from "./ParticipantsTable";
 import { RegisterIndividualDialog } from "./RegisterIndividualDialog";
 import { RegisterTeamDialog } from "./RegisterTeamDialog";
 import { EditIndividualDialog } from "./EditIndividualDialog";
-import { EditTeamDialog } from "./EditTeamDialog";             
-import { exportIndividualsToExcel, exportTeamsToExcel } from "@/lib/exportToExcel";
+import { EditTeamDialog } from "./EditTeamDialog";
+import {
+  exportIndividualsToExcel,
+  exportTeamsToExcel,
+} from "@/lib/exportToExcel";
 import { Button } from "@/components/ui/button";
 import { Download, Trophy, Users, User, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,23 +22,26 @@ interface ParticipantUpdatePayload {
 
 interface GameDashboardProps {
   game: Game | null;
+  collapsed: boolean;
 }
 
-export function GameDashboard({ game }: GameDashboardProps) {
+export function GameDashboard({ game, collapsed }: GameDashboardProps) {
   // State for managing the edit modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [recordToEdit, setRecordToEdit] = useState<IndividualParticipant | Team | null>(null);
-  const { 
-    individuals, 
-    teams, 
-    loading, 
-    adding, 
-    addIndividual, 
+  const [recordToEdit, setRecordToEdit] = useState<
+    IndividualParticipant | Team | null
+  >(null);
+  const {
+    individuals,
+    teams,
+    loading,
+    adding,
+    addIndividual,
     addTeam,
-    deleteIndividual,   
+    deleteIndividual,
     deleteTeam,
-    updateIndividual,  
-    updateTeam,         
+    updateIndividual,
+    updateTeam,
   } = useParticipants(game?.id ?? null, game?.is_group_game ?? false);
   // --------------------------------
 
@@ -47,9 +53,12 @@ export function GameDashboard({ game }: GameDashboardProps) {
           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center">
             <Trophy className="h-10 w-10 text-primary" />
           </div>
-          <h2 className="font-display text-2xl font-bold mb-3">Welcome to Sports Week</h2>
+          <h2 className="font-display text-2xl font-bold mb-3">
+            Welcome to Sports Week
+          </h2>
           <p className="text-muted-foreground">
-            Select a game from the sidebar to view and manage participants, or create a new game to get started.
+            Select a game from the sidebar to view and manage participants, or
+            create a new game to get started.
           </p>
         </div>
       </div>
@@ -75,7 +84,13 @@ export function GameDashboard({ game }: GameDashboardProps) {
   };
 
   const handleDeleteClick = (id: number) => {
-    if (confirm(`Are you sure you want to delete this ${game.is_group_game ? 'team' : 'participant'}?`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete this ${
+          game.is_group_game ? "team" : "participant"
+        }?`
+      )
+    ) {
       if (game.is_group_game) {
         deleteTeam(id);
       } else {
@@ -87,9 +102,9 @@ export function GameDashboard({ game }: GameDashboardProps) {
   const handleUpdateSubmit = (updatedData: any) => {
     if (!recordToEdit) return;
 
-    const payload: ParticipantUpdatePayload = { 
-        id: recordToEdit.id, 
-        updatedData 
+    const payload: ParticipantUpdatePayload = {
+      id: recordToEdit.id,
+      updatedData,
     };
 
     if (game.is_group_game) {
@@ -97,12 +112,16 @@ export function GameDashboard({ game }: GameDashboardProps) {
     } else {
       updateIndividual(payload);
     }
-    
+
     setIsEditModalOpen(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background">
+    <div
+      className={`flex-1 flex flex-col min-h-0 bg-background transition-all duration-300 ease-in-out ${
+        collapsed ? "ml-16" : "ml-72"
+      }`}
+    >
       {/* Header */}
       <header className="px-8 py-6 border-b bg-card">
         {/* ... (Header content remains the same) ... */}
@@ -161,26 +180,26 @@ export function GameDashboard({ game }: GameDashboardProps) {
       {/* Table */}
       <main className="flex-1 overflow-auto p-8">
         {loading ? (
-            <div className="flex justify-center items-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
+          <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
         ) : (
-            <ParticipantsTable
-              individuals={individuals}
-              teams={teams}
-              isGroupGame={game.is_group_game}
-              loading={loading}
-              
-              // --- PASS HANDLERS TO THE TABLE COMPONENT ---
-              onEdit={handleEditClick}      // Passes function to open the modal
-              onDelete={handleDeleteClick}  // Passes function to handle deletion
-            />
+          <ParticipantsTable
+            individuals={individuals}
+            teams={teams}
+            isGroupGame={game.is_group_game}
+            loading={loading}
+            // --- PASS HANDLERS TO THE TABLE COMPONENT ---
+            onEdit={handleEditClick} // Passes function to open the modal
+            onDelete={handleDeleteClick} // Passes function to handle deletion
+          />
         )}
       </main>
 
       {/* --- CONDITIONAL EDIT MODALS --- */}
-      {isEditModalOpen && recordToEdit && (
-        game.is_group_game ? (
+      {isEditModalOpen &&
+        recordToEdit &&
+        (game.is_group_game ? (
           <EditTeamDialog
             team={recordToEdit as Team}
             onClose={() => setIsEditModalOpen(false)}
@@ -192,8 +211,7 @@ export function GameDashboard({ game }: GameDashboardProps) {
             onClose={() => setIsEditModalOpen(false)}
             onSubmit={handleUpdateSubmit}
           />
-        )
-      )}
+        ))}
     </div>
   );
 }
